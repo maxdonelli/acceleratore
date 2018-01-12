@@ -1,0 +1,131 @@
+adesso provo ad inserire il primo codice
+
+{
+	acceleratore-valute    -- sottostante : forex 30minuti  --- 
+	versione 0.2A -LMAX
+	data : 14 settembre 2017 
+	
+	quando rileva esplosione di vola dopo  n candele  segue il trend con trailing-stop 
+	da ottimizare il num delle candele , il valore del corpo camdela (open-close) ed il suo range
+	si puo ulteriormente ottimizzare con orari ingresso /uscita e giornate di trading ( da inserire) 
+	
+	possibile miglioramento di ingresso/uscita con utilizzo di  DATA2 con timeframe piu basso( da verificare)
+	
+	NB: le quantita e i moltiplicatori sono stati inseriri per adattarsi al minmove di  Interactive Brokesr sui valori spot del forex
+	    ovviamente andranno modificati nel caso di CFD
+	    
+	- inserimento parametro (percentOmbraIngresso) per filtrare l'ombra dell ultima candela ---> se  e' troppo alta rispetto al corpo (es > 80%) allora
+														  non entro perche' v'e' un probabile ritracciamento in atto
+														  l'ombra esaminata sara' qualla superiore in caso di long
+														  e quella inferiore in caso di short
+														  
+														  
+	dopo alcuni backtest  vi e' stato un lieve miglioramento ( a parita' degli altri parametri in input)	 
+	niente di che  ( cira 1,5 %)  ma meglio di niente !!  
+	
+	14 Sett/17  -   ridotto moltiplicatore da 100000 a 1000 per adattarsi al minmove di lmax
+		     -   eliminato il trailingstop espresso in dollari secondo indicazioni di alex e 
+		         utilizzo di setstoploss_pt e  setprofittarget_pt  ( in pip)
+		         ridotto anche la size in acquisto (50) in quanto  un CFD 
+		         
+		         
+	 		  ------- ATTENZIONE  LA QUANTITA DI CONTRATTI E FISSA A 50 ----------
+}
+
+once ClearPrintLog;
+
+
+Input :  numerocandele(5), moltiplicCorpo(7.00), moltiplicaTotale(5.00),valoreTrailing(80), percentOmbraIngresso(25),
+	  valoreStoplossPip(10), valoreProfittargetPip(10);
+
+         //  parametri da inserire ------>    oraIngresso(0900),oraUscita(1000),giornoNonTrado(0), 
+	
+var : double ingressoLong(01),ingressoShort(01),tpBuy(0.0), tpSell(0.0),SLBuy(0.0),SLSell(0.0);
+
+var : giornoIndecisione (false),double sommaTotaleCandela(0.00000),sommaCorpocandela(0.00000), mediaCorpo(0.00000),
+ mediaTotale(0.00000), corpoCandela(0.00000), totaleCandela(0.00000), ombra(0.000); 
+
+
+if marketposition <> 0 then 
+		begin
+		//setstoploss_pt(valoreStoplossPip);
+		//setprofittarget_pt(valoreProfittargetPip);
+		
+		 setdollartrailing(valoreTrailing); 
+		
+		
+		end;
+
+
+// giornoIndecisione = absvalue(opend(1)-closed(1)) < 0.50*(Highd(1)-LowD(1));
+
+
+
+sommaCorpocandela=0;
+sommaTotaleCandela=0;
+
+
+value2 = 0;
+value3 =0;
+
+// inizio ricerca candela di splosione volatilita rispetto a candele precedenti
+
+	for value1 = 1 to numerocandele 
+		begin
+		value2= absvalue(open[value1]-close[value1])*1000;
+		value3=absvalue(high[value1]-Low[value1])*1000;
+		
+		
+		sommaCorpocandela= sommaCorpocandela+value2;
+		sommaTotaleCandela=sommaTotaleCandela+value3;
+
+		end;
+	
+	
+mediaCorpo=sommaCorpocandela/numerocandele;
+mediaTotale=sommaTotaleCandela/numerocandele;
+
+corpoCandela= absvalue(open[0] - close[0])*1000;
+totaleCandela= absvalue(high[0] - low[0])*1000;
+
+// verifica setup ingresso 
+
+if (corpoCandela > mediaCorpo*moltiplicCorpo) and (totaleCandela > mediaTotale*moltiplicaTotale) and marketposition =0 then
+
+	begin
+	if Close > close[1] then
+				begin
+					ombra=(high - Close)*1000;                // verifica congruita ombra superiore candela precedente 
+					
+					// stampe di verifica ---------- >  print( " ombra  ",ombra,"   corpo   ",corpoCandela);
+					//                                  print(" percImngr/100   ", percentOmbraIngresso/100, " Rapporto   ",ombra/corpoCandela);
+					
+					if ombra / corpoCandela < percentOmbraIngresso / 100 then 
+							begin
+							 buy 50 shares next bar at  market;
+	 						end;		
+	 
+	 
+	 			end;
+	 
+	if close < close[1] then 
+				begin	
+					ombra=(low - Close)*100000;  // verifica  congruita ombra inferiore candela precedente 
+					if ombra / corpoCandela < percentOmbraIngresso /100 then
+							begin
+							sellshort 50 shares next  bar at market;
+							end;
+				end;
+	
+	
+	end;
+
+	
+
+
+setexitonclose;  // chiusura a fine sessione ! 
+
+// ------FORSE SONO RIUSCITO -----
+
+# acceleratore
+prova new repo TS acceleratore ( speriamo!!)
