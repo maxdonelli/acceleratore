@@ -1,0 +1,84 @@
+
+{
+	acceleratore-valute    -- sottostante : forex 30minuti  --- 
+	versione 0.2A -LMAX
+	data : 14 settembre 2017 
+	
+	quando rileva esplosione di vola dopo  n candele  segue il trend con trailing-stop 
+	da ottimizare il num delle candele , il valore del corpo camdela (open-close) ed il suo range
+	si puo ulteriormente ottimizzare con orari ingresso /uscita e giornate di trading ( da inserire) 
+	
+	possibile miglioramento di ingresso/uscita con utilizzo di  DATA2 con timeframe piu basso( da verificare)
+	
+	NB: le quantita e i moltiplicatori sono stati inseriri per adattarsi al minmove di  Interactive Brokesr sui valori spot del forex
+	    ovviamente andranno modificati nel caso di CFD
+	    
+	- inserimento parametro (percentOmbraIngresso) per filtrare l'ombra dell ultima candela ---> se  e' troppo alta rispetto al corpo (es > 80%) allora
+														  non entro perche' v'e' un probabile ritracciamento in atto
+														  l'ombra esaminata sara' qualla superiore in caso di long
+														  e quella inferiore in caso di short
+														  comunque sara da ottimizzare
+														  
+	dopo alcuni backtest  vi e' stato un lieve miglioramento ( a parita' degli altri parametri in input)	 
+	niente di che  ( cira 1,5 %)  ma meglio di niente !!  
+	
+	14 Sett/17  -   ridotto moltiplicatore da 100000 a 1000 per adattarsi al minmove di lmax
+		     -   eliminato il trailingstop espresso in dollari secondo indicazioni di alex e 
+		         utilizzo di setstoploss_pt e  setprofittarget_pt  ( in pip)
+		         ridotto anche la size in acquisto (50) in quanto  un CFD 
+	 			lascio comunque il codice per utilizzo del trailingstop
+	 			
+19 dicembre -  dopo i deludenti risultati del TS postato su githube telegram ho pensato di riprendere questo che 
+sicuramente va meglio , anche se fa molte meno operazioni
+
+- inserito variante per possibilta di utilizzo trailigstop / stoploss/ takeprofit
+
+}
+
+once ClearPrintLog;
+
+
+Input :  numerocandele(5), moltiplicCorpo(2.00), moltiplicaTotale(2.00),valoreTrailing(80), percentOmbraIngresso(180),
+		numContratti(50), stoplossUSD(80), profitUSD(130);
+	 // valoreStoplossPip(10), valoreProfittargetPip(10);
+
+         //  parametri da inserire ------>    oraIngresso(0900),oraUscita(1000),giornoNonTrado(0), 
+	
+
+var : double  ombra(0.00000),  double corpoCandela(0.00000); // eventuale blast-off ->  giornoIndecisione (false),
+
+
+if marketposition <> 0 then 
+		begin
+			if valoreTrailing =0 then begin
+				setstoploss(stoplossUSD);
+				setprofittarget(profitUSD);
+							   end
+			else
+				 setdollartrailing(valoreTrailing); 
+		
+		
+		end;
+
+
+
+// verifica setup ingresso  
+
+if Max_Esplosione_Candele(numerocandele,moltiplicCorpo,moltiplicaTotale)  and marketposition =0 then
+
+	begin
+		if Close > close[1] and Max_vola_candela(percentOmbraIngresso,"long") then 	 buy numContratti shares next bar at  market;
+	
+	 
+	  	 
+		if close < close[1]  and Max_vola_candela(percentOmbraIngresso,"short") then   sellshort numContratti shares next  bar at market;
+		
+	end;
+	
+	
+
+
+	
+
+
+setexitonclose;  // chiusura a fine sessione ! 
