@@ -1,0 +1,68 @@
+// dimenticavo di inserire ls function !!   eccole
+
+Max_vola_candela(numeric,string)
+
+input: percentOmbraIngresso(NumericSimple), long_short(string);
+
+vars: ombra1(0), corpoCandela2(0);
+
+corpoCandela2=absvalue(open[0] - close[0])*1000;
+
+if long_short = "long" then 
+		begin
+		ombra1= (high - Close)*1000;
+		if ombra1 / corpoCandela2  < percentOmbraIngresso/100  then Max_vola_candela = True 
+		else  Max_vola_candela= false;
+			
+		end;
+		
+if long_short = "short" then 
+
+
+		begin
+		ombra1= (Low - Close)*1000;
+		if ombra1 / corpoCandela2  < percentOmbraIngresso/100  then Max_vola_candela = True 
+		else  Max_vola_candela= false;
+			
+		end;
+
+// ecco la seconda
+
+Max_esplosione_candele(numeric,numeric,numeric)
+
+
+input: numerocandele(NumericSimple),moltiplicCorpo(NumericSimple),moltiplicaTotale(NumericSimple);
+	   
+var: mediaCorpo1(0), mediaTotale1(0), corpoCandela1(0), totaleCandela1(0),sommaCorpocandela1(0),
+	sommaTotaleCandela1(0);   
+	   
+sommaCorpocandela1=0;
+sommaTotaleCandela1=0;
+
+Max_Esplosione_Candele = False;	
+value2 = 0;
+value3 =0;
+   
+	   	for value1 = 1 to numerocandele 
+		begin
+		value2= absvalue(open[value1]-close[value1])*1000;
+		value3=absvalue(high[value1]-Low[value1])*1000; 
+		
+		
+		sommaCorpocandela1= sommaCorpocandela1+value2;
+		sommaTotaleCandela1=sommaTotaleCandela1+value3;
+
+		end;
+	
+	
+mediaCorpo1=sommaCorpocandela1/numerocandele;
+mediaTotale1=sommaTotaleCandela1/numerocandele;
+
+corpoCandela1= absvalue(open[0] - close[0])*1000;
+totaleCandela1= absvalue(high[0] - low[0])*1000;
+
+
+if (corpoCandela1 > mediaCorpo1*moltiplicCorpo) and (totaleCandela1 > mediaTotale1*moltiplicaTotale) then 
+
+Max_Esplosione_Candele = true;
+
